@@ -2,6 +2,12 @@ const express = require("express");
 const app = express();
 const port = 3000;
 const path = require('path');
+const exphbs = require ('express-handlebars')
+app.engine('hbs', hbs.express4({
+  partialsDir: __dirname + '/views/partials'
+}));
+app.set('view engine', 'hbs');
+app.set('views', __dirname + '/views');
 var mysql      = require('mysql');
 var connection = mysql.createConnection({
   host     : 'localhost',
@@ -10,15 +16,26 @@ var connection = mysql.createConnection({
   database : 'news'
 });
 
-connection.connect();
+connection.connect((err) =>  {
+  if (err) throw err;
+  console.log('connecté à MySQL!');
+});
 
-
-
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "views/index.html"));
+// Récupérer et trier les actualités par date depuis la base de données
+ 
+app.get('/', (req, res) => {
+  connection.query('SELECT * FROM actualites', (err, results) => {
+    if (err) {
+      console.error('Error retrieving news:', err);
+      return res.status(500).send('Server error');
+    }
+    
+    res.render('home', { actualites: results });
+  });
 });
 
 app.get("/add", (req, res) => {
+  res.render('add');
   res.sendFile(path.join(__dirname, "views/add.html"));
 });
 
